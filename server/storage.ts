@@ -1,8 +1,12 @@
 import { User, InsertUser, Item, InsertItem } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { users, items } from "@shared/schema";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -18,91 +22,81 @@ export interface IStorage {
   sessionStore: session.Store;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private items: Map<number, Item>;
-  private currentUserId: number;
-  private currentItemId: number;
+export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.users = new Map();
-    this.items = new Map();
-    this.currentUserId = 1;
-    this.currentItemId = 1;
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000, // 24 hours
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
     });
   }
 
   async getUser(id: number): Promise<User | undefined> {
     console.log('Getting user by id:', id);
-    const user = this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
     console.log('Found user:', user ? 'yes' : 'no');
     return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     console.log('Getting user by username:', username);
-    const user = Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
     console.log('Found user:', user ? 'yes' : 'no');
     return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     console.log('Creating user:', insertUser.username);
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    console.log('User created with id:', id);
+    const [user] = await db.insert(users).values(insertUser).returning();
+    console.log('User created with id:', user.id);
     return user;
   }
 
   async createItem(insertItem: InsertItem & { userId: number }): Promise<Item> {
     console.log('Creating item:', insertItem);
-    const id = this.currentItemId++;
-    const item: Item = {
+    const [item] = await db.insert(items).values({
       ...insertItem,
-      id,
       status: 'open',
       date: new Date(),
-    };
-    this.items.set(id, item);
-    console.log('Item created with id:', id);
+    }).returning();
+    console.log('Item created with id:', item.id);
     return item;
   }
 
   async getItem(id: number): Promise<Item | undefined> {
-    return this.items.get(id);
+    const [item] = await db.select().from(items).where(eq(items.id, id));
+    return item;
   }
 
   async getItems(filters?: { type?: string; category?: string }): Promise<Item[]> {
-    let items = Array.from(this.items.values());
+    let query = db.select().from(items);
 
     if (filters?.type) {
-      items = items.filter(item => item.type === filters.type);
+      query = query.where(eq(items.type, filters.type));
     }
     if (filters?.category) {
-      items = items.filter(item => item.category === filters.category);
+      query = query.where(eq(items.category, filters.category));
     }
 
-    return items.sort((a, b) => b.date.getTime() - a.date.getTime());
+    const result = await query.orderBy(items.date);
+    return result;
   }
 
   async updateItemStatus(id: number, status: string): Promise<Item> {
-    const item = await this.getItem(id);
-    if (!item) throw new Error('Item not found');
+    const [item] = await db
+      .update(items)
+      .set({ status })
+      .where(eq(items.id, id))
+      .returning();
 
-    const updatedItem = { ...item, status };
-    this.items.set(id, updatedItem);
-    return updatedItem;
+    if (!item) throw new Error('Item not found');
+    return item;
   }
 
   async deleteItem(id: number): Promise<void> {
-    this.items.delete(id);
+    await db.delete(items).where(eq(items.id, id));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
