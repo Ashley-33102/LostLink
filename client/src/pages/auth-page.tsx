@@ -8,9 +8,11 @@ import { useForm } from "react-hook-form";
 import { insertUserSchema } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Redirect } from "wouter";
+import { useState } from "react";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
+  const [formError, setFormError] = useState("");
 
   const loginForm = useForm({
     resolver: zodResolver(insertUserSchema),
@@ -26,6 +28,26 @@ export default function AuthPage() {
     return <Redirect to="/" />;
   }
 
+  const handleRegister = async (data: any) => {
+    try {
+      setFormError("");
+      await registerMutation.mutateAsync(data);
+    } catch (error: any) {
+      setFormError(error.message || "Registration failed. Please try again.");
+      console.error("Registration error:", error);
+    }
+  };
+
+  const handleLogin = async (data: any) => {
+    try {
+      setFormError("");
+      await loginMutation.mutateAsync(data);
+    } catch (error: any) {
+      setFormError(error.message || "Login failed. Please try again.");
+      console.error("Login error:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       <div className="flex items-center justify-center p-8">
@@ -36,6 +58,11 @@ export default function AuthPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {formError && (
+              <div className="mb-4 p-3 text-sm text-red-500 bg-red-50 rounded-md">
+                {formError}
+              </div>
+            )}
             <Tabs defaultValue="login">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Login</TabsTrigger>
@@ -44,16 +71,7 @@ export default function AuthPage() {
 
               <TabsContent value="login">
                 <Form {...loginForm}>
-                  <form 
-                    onSubmit={loginForm.handleSubmit((data) => {
-                      try {
-                        loginMutation.mutate(data);
-                      } catch (error) {
-                        console.error('Login error:', error);
-                      }
-                    })} 
-                    className="space-y-4"
-                  >
+                  <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                     <FormField
                       control={loginForm.control}
                       name="username"
@@ -80,7 +98,11 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={loginMutation.isPending}
+                    >
                       {loginMutation.isPending ? "Logging in..." : "Login"}
                     </Button>
                   </form>
@@ -89,16 +111,7 @@ export default function AuthPage() {
 
               <TabsContent value="register">
                 <Form {...registerForm}>
-                  <form 
-                    onSubmit={registerForm.handleSubmit((data) => {
-                      try {
-                        registerMutation.mutate(data);
-                      } catch (error) {
-                        console.error('Registration error:', error);
-                      }
-                    })} 
-                    className="space-y-4"
-                  >
+                  <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
                     <FormField
                       control={registerForm.control}
                       name="username"
@@ -125,7 +138,11 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={registerMutation.isPending}
+                    >
                       {registerMutation.isPending ? "Creating account..." : "Register"}
                     </Button>
                   </form>
