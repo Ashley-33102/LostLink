@@ -31,28 +31,37 @@ export class MemStorage implements IStorage {
     this.currentUserId = 1;
     this.currentItemId = 1;
     this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+      checkPeriod: 86400000, // 24 hours
     });
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    console.log('Getting user by id:', id);
+    const user = this.users.get(id);
+    console.log('Found user:', user ? 'yes' : 'no');
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
+    console.log('Getting user by username:', username);
+    const user = Array.from(this.users.values()).find(
       (user) => user.username === username,
     );
+    console.log('Found user:', user ? 'yes' : 'no');
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    console.log('Creating user:', insertUser.username);
     const id = this.currentUserId++;
     const user: User = { ...insertUser, id };
     this.users.set(id, user);
+    console.log('User created with id:', id);
     return user;
   }
 
   async createItem(insertItem: InsertItem & { userId: number }): Promise<Item> {
+    console.log('Creating item:', insertItem);
     const id = this.currentItemId++;
     const item: Item = {
       ...insertItem,
@@ -61,6 +70,7 @@ export class MemStorage implements IStorage {
       date: new Date(),
     };
     this.items.set(id, item);
+    console.log('Item created with id:', id);
     return item;
   }
 

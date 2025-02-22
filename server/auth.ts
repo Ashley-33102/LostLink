@@ -43,19 +43,48 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
-      const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) {
-        return done(null, false);
-      } else {
+      try {
+        console.log('Login attempt for:', username);
+        const user = await storage.getUserByUsername(username);
+        console.log('User found:', user ? 'yes' : 'no');
+
+        if (!user) {
+          console.log('User not found');
+          return done(null, false);
+        }
+
+        const isValid = await comparePasswords(password, user.password);
+        console.log('Password valid:', isValid);
+
+        if (!isValid) {
+          console.log('Invalid password');
+          return done(null, false);
+        }
+
+        console.log('Login successful');
         return done(null, user);
+      } catch (error) {
+        console.error('Login error:', error);
+        return done(error);
       }
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
+  passport.serializeUser((user, done) => {
+    console.log('Serializing user:', user.id);
+    done(null, user.id);
+  });
+
   passport.deserializeUser(async (id: number, done) => {
-    const user = await storage.getUser(id);
-    done(null, user);
+    try {
+      console.log('Deserializing user:', id);
+      const user = await storage.getUser(id);
+      console.log('User found:', user ? 'yes' : 'no');
+      done(null, user);
+    } catch (error) {
+      console.error('Deserialization error:', error);
+      done(error);
+    }
   });
 
   app.post("/api/register", async (req, res, next) => {
