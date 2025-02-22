@@ -36,12 +36,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         console.log('Attempting login with:', { username: credentials.username });
         const res = await apiRequest("POST", "/api/login", credentials);
+        if (!res.ok) {
+          throw new Error("Invalid username or password");
+        }
         const data = await res.json();
         console.log('Login response:', data);
         return data;
       } catch (error) {
         console.error('Login error:', error);
-        throw error;
+        throw new Error("Invalid username or password");
       }
     },
     onSuccess: (user: SelectUser) => {
@@ -63,12 +66,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         console.log('Attempting registration with:', { username: credentials.username });
         const res = await apiRequest("POST", "/api/register", credentials);
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || "Registration failed");
+        }
         const data = await res.json();
         console.log('Registration response:', data);
         return data;
-      } catch (error) {
+      } catch (error: any) {
         console.error('Registration error:', error);
-        throw error;
+        throw new Error(error.message || "Registration failed");
       }
     },
     onSuccess: (user: SelectUser) => {

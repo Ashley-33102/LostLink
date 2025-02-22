@@ -1,21 +1,111 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Item } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
-  const [type, setType] = useState<string>("all");
-  const [category, setCategory] = useState<string>("all");
+  const { toast } = useToast();
 
   const { data: items, isLoading } = useQuery<Item[]>({
-    queryKey: ["/api/items", { type: type === "all" ? "" : type, category: category === "all" ? "" : category }],
+    queryKey: ["/api/items"],
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/items/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/items"] });
+      toast({ title: "Success", description: "Item deleted successfully" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const markAsCompleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("PATCH", `/api/items/${id}/status`, { status: "closed" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/items"] });
+      toast({ title: "Success", description: "Item marked as completed" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const lostItems = items?.filter(item => item.type === 'lost' && item.status === 'open') || [];
+  const foundItems = items?.filter(item => item.type === 'found' && item.status === 'open') || [];
+
+  const ItemCard = ({ item }: { item: Item }) => (
+    <Card className="backdrop-blur-sm bg-card/95">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>{item.title}</span>
+          <span className={`text-sm px-2 py-1 rounded ${item.type === 'lost' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
+            {item.type.toUpperCase()}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground mb-2">{item.description}</p>
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Location:</span>
+            <span>{item.location}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Category:</span>
+            <span>{item.category}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Contact:</span>
+            <span>{item.contactNumber}</span>
+          </div>
+        </div>
+
+        {item.userId === user?.id && (
+          <div className="flex items-center gap-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => markAsCompleteMutation.mutate(item.id)}
+              disabled={markAsCompleteMutation.isPending}
+            >
+              <Check className="h-4 w-4 mr-1" />
+              Mark as Complete
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => deleteMutation.mutate(item.id)}
+              disabled={deleteMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Delete
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95">
@@ -26,6 +116,9 @@ export default function HomePage() {
           </h1>
           <div className="flex items-center gap-4">
             <span className="text-muted-foreground">Welcome, {user?.username}</span>
+            <Link href="/submit">
+              <Button>Submit Item</Button>
+            </Link>
             <Button variant="outline" onClick={() => logoutMutation.mutate()}>
               Logout
             </Button>
@@ -34,74 +127,45 @@ export default function HomePage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="lost">Lost Items</SelectItem>
-                <SelectItem value="found">Found Items</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="electronics">Electronics</SelectItem>
-                <SelectItem value="clothing">Clothing</SelectItem>
-                <SelectItem value="accessories">Accessories</SelectItem>
-                <SelectItem value="documents">Documents</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Link href="/submit">
-            <Button>Submit Item</Button>
-          </Link>
-        </div>
-
         {isLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
-        ) : items?.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              No items found matching your filters
-            </CardContent>
-          </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {items?.map((item) => (
-              <Card key={item.id} className="backdrop-blur-sm bg-card/95">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{item.title}</span>
-                    <span className={`text-sm px-2 py-1 rounded ${item.type === 'lost' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
-                      {item.type.toUpperCase()}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-2">{item.description}</p>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-medium">Location:</span>
-                    <span>{item.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm mt-1">
-                    <span className="font-medium">Category:</span>
-                    <span>{item.category}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="space-y-8">
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Lost Items</h2>
+              {lostItems.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    No lost items reported
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {lostItems.map((item) => (
+                    <ItemCard key={item.id} item={item} />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Found Items</h2>
+              {foundItems.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    No found items reported
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {foundItems.map((item) => (
+                    <ItemCard key={item.id} item={item} />
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         )}
       </main>
