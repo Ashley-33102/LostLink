@@ -10,11 +10,11 @@ import { useState } from "react";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
-  const [type, setType] = useState<string>("");
-  const [category, setCategory] = useState<string>("");
+  const [type, setType] = useState<string>("all");
+  const [category, setCategory] = useState<string>("all");
 
   const { data: items, isLoading } = useQuery<Item[]>({
-    queryKey: ["/api/items", { type, category }],
+    queryKey: ["/api/items", { type: type === "all" ? "" : type, category: category === "all" ? "" : category }],
   });
 
   return (
@@ -39,7 +39,7 @@ export default function HomePage() {
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="lost">Lost Items</SelectItem>
                 <SelectItem value="found">Found Items</SelectItem>
               </SelectContent>
@@ -50,7 +50,7 @@ export default function HomePage() {
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="electronics">Electronics</SelectItem>
                 <SelectItem value="clothing">Clothing</SelectItem>
                 <SelectItem value="accessories">Accessories</SelectItem>
