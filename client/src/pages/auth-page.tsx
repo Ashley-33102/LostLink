@@ -32,7 +32,7 @@ export default function AuthPage() {
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-2xl font-bold">
-              Lost & Found System
+              Item Recovery System
             </CardTitle>
           </CardHeader>
           <CardContent>
