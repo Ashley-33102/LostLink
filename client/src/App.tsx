@@ -3,11 +3,13 @@ import { queryClient } from "./lib/queryClient";
 import { Switch, Route } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
-import HomePage from "@/pages/home-page";
-import NotFound from "@/pages/not-found";
-import AuthPage from "@/pages/auth-page";
-import SubmitItem from "@/pages/submit-item";
 import { ProtectedRoute } from "./lib/protected-route";
+import NotFound from "./pages/not-found";
+
+// Import pages
+import AuthPage from "./pages/auth-page";
+import HomePage from "./pages/home-page";
+import SubmitItem from "./pages/submit-item";
 
 function Router() {
   return (

@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
-  const [type, setType] = React.useState<string>("");
-  const [category, setCategory] = React.useState<string>("");
+  const [type, setType] = useState<string>("");
+  const [category, setCategory] = useState<string>("");
 
   const { data: items, isLoading } = useQuery<Item[]>({
     queryKey: ["/api/items", { type, category }],
