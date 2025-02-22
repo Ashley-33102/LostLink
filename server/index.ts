@@ -9,7 +9,7 @@ app.use(express.urlencoded({ extended: false }));
 // Set a default session secret if not provided
 process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'temp_secret_for_development';
 
-// Add request logging middleware
+// Add request logging middleware with more detailed logging
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -45,7 +45,7 @@ app.use((req, res, next) => {
   const startTime = Date.now();
   log(`Starting server at ${new Date().toISOString()}`);
   log(`Environment: ${app.get('env')}`);
-  log(`PORT: ${process.env.PORT || 5000}`); // Changed default port to 5000
+  log(`PORT: ${process.env.PORT || 5000}`);
   log(`SESSION_SECRET exists: ${Boolean(process.env.SESSION_SECRET)}`);
 
   const server = await registerRoutes(app);
@@ -65,7 +65,7 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const port = process.env.PORT || 5000; // Changed default port to 5000
+  const port = process.env.PORT || 5000;
   server.listen(Number(port), "0.0.0.0", () => {
     const startupDuration = Date.now() - startTime;
     log(`Server startup took ${startupDuration}ms`);
