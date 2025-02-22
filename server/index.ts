@@ -9,7 +9,7 @@ app.use(express.urlencoded({ extended: false }));
 // Set a default session secret if not provided
 process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'temp_secret_for_development';
 
-// Add request logging middleware with more detailed logging
+// Add enhanced logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -23,52 +23,52 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+    let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+    if (capturedJsonResponse) {
+      logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
     }
+    log(logLine);
   });
 
   next();
 });
 
 (async () => {
-  // Add startup diagnostic logging
-  const startTime = Date.now();
-  log(`Starting server at ${new Date().toISOString()}`);
-  log(`Environment: ${app.get('env')}`);
-  log(`PORT: ${process.env.PORT || 5000}`);
-  log(`SESSION_SECRET exists: ${Boolean(process.env.SESSION_SECRET)}`);
+  try {
+    const startTime = Date.now();
+    log(`Starting server at ${new Date().toISOString()}`);
+    log(`Environment: ${app.get('env')}`);
+    log(`NODE_ENV: ${process.env.NODE_ENV}`);
+    log(`PORT: ${process.env.PORT || 5000}`);
+    log(`SESSION_SECRET exists: ${Boolean(process.env.SESSION_SECRET)}`);
+    log(`REPL_ID exists: ${Boolean(process.env.REPL_ID)}`);
+    log(`REPL_SLUG exists: ${Boolean(process.env.REPL_SLUG)}`);
 
-  const server = await registerRoutes(app);
+    const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-    log(`Error: ${message}`);
-  });
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      log(`Error: ${message}`);
+      res.status(status).json({ message });
+    });
 
-  if (app.get("env") === "development") {
-    log('Setting up Vite middleware...');
-    await setupVite(app, server);
-    log('Vite middleware setup complete');
-  } else {
-    serveStatic(app);
+    if (process.env.NODE_ENV !== "production") {
+      log('Setting up Vite middleware...');
+      await setupVite(app, server);
+      log('Vite middleware setup complete');
+    } else {
+      serveStatic(app);
+    }
+
+    const port = process.env.PORT || 5000;
+    server.listen(Number(port), "0.0.0.0", () => {
+      const startupDuration = Date.now() - startTime;
+      log(`Server startup took ${startupDuration}ms`);
+      log(`Server running at http://0.0.0.0:${port}`);
+    });
+  } catch (error) {
+    log(`Fatal error during startup: ${error}`);
+    process.exit(1);
   }
-
-  const port = process.env.PORT || 5000;
-  server.listen(Number(port), "0.0.0.0", () => {
-    const startupDuration = Date.now() - startTime;
-    log(`Server startup took ${startupDuration}ms`);
-    log(`Server running at http://0.0.0.0:${port}`);
-  });
 })();
