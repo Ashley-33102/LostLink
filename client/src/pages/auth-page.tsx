@@ -11,7 +11,7 @@ import { Redirect } from "wouter";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
-  
+
   const loginForm = useForm({
     resolver: zodResolver(insertUserSchema),
     defaultValues: { username: "", password: "" },
@@ -41,10 +41,19 @@ export default function AuthPage() {
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="login">
                 <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit((data) => loginMutation.mutate(data))} className="space-y-4">
+                  <form 
+                    onSubmit={loginForm.handleSubmit((data) => {
+                      try {
+                        loginMutation.mutate(data);
+                      } catch (error) {
+                        console.error('Login error:', error);
+                      }
+                    })} 
+                    className="space-y-4"
+                  >
                     <FormField
                       control={loginForm.control}
                       name="username"
@@ -77,10 +86,19 @@ export default function AuthPage() {
                   </form>
                 </Form>
               </TabsContent>
-              
+
               <TabsContent value="register">
                 <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit((data) => registerMutation.mutate(data))} className="space-y-4">
+                  <form 
+                    onSubmit={registerForm.handleSubmit((data) => {
+                      try {
+                        registerMutation.mutate(data);
+                      } catch (error) {
+                        console.error('Registration error:', error);
+                      }
+                    })} 
+                    className="space-y-4"
+                  >
                     <FormField
                       control={registerForm.control}
                       name="username"
@@ -117,7 +135,7 @@ export default function AuthPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       <div className="hidden lg:flex items-center justify-center bg-gradient-to-r from-primary/10 to-primary/5 p-8">
         <div className="max-w-md space-y-4">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
