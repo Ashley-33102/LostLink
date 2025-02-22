@@ -25,6 +25,7 @@ export default function SubmitItem() {
       description: "",
       category: "other",
       location: "",
+      contactNumber: "",
     },
   });
 
@@ -48,11 +49,13 @@ export default function SubmitItem() {
   });
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <div className="min-h-screen bg-gradient-to-b from-background to-background/95 p-8">
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Submit Item</CardTitle>
+            <CardTitle className="text-2xl bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Submit Item
+            </CardTitle>
             <Link href="/">
               <Button variant="outline">Back to Home</Button>
             </Link>
@@ -144,6 +147,20 @@ export default function SubmitItem() {
                     <FormLabel>Location</FormLabel>
                     <FormControl>
                       <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="contactNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contact Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="tel" placeholder="+1234567890" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -8,12 +8,13 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   createItem(item: InsertItem & { userId: number }): Promise<Item>;
   getItem(id: number): Promise<Item | undefined>;
   getItems(filters?: { type?: string; category?: string }): Promise<Item[]>;
   updateItemStatus(id: number, status: string): Promise<Item>;
-  
+  deleteItem(id: number): Promise<void>;
+
   sessionStore: session.Store;
 }
 
@@ -69,24 +70,28 @@ export class MemStorage implements IStorage {
 
   async getItems(filters?: { type?: string; category?: string }): Promise<Item[]> {
     let items = Array.from(this.items.values());
-    
+
     if (filters?.type) {
       items = items.filter(item => item.type === filters.type);
     }
     if (filters?.category) {
       items = items.filter(item => item.category === filters.category);
     }
-    
+
     return items.sort((a, b) => b.date.getTime() - a.date.getTime());
   }
 
   async updateItemStatus(id: number, status: string): Promise<Item> {
     const item = await this.getItem(id);
     if (!item) throw new Error('Item not found');
-    
+
     const updatedItem = { ...item, status };
     this.items.set(id, updatedItem);
     return updatedItem;
+  }
+
+  async deleteItem(id: number): Promise<void> {
+    this.items.delete(id);
   }
 }
 

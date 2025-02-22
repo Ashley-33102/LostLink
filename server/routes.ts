@@ -19,7 +19,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/items", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     const parseResult = insertItemSchema.safeParse(req.body);
     if (!parseResult.success) {
       return res.status(400).json(parseResult.error);
@@ -34,10 +34,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/items/:id/status", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     const { id } = req.params;
     const { status } = req.body;
-    
+
     if (!['open', 'closed'].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
@@ -47,6 +47,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(item);
     } catch (err) {
       res.status(404).json({ message: "Item not found" });
+    }
+  });
+
+  app.delete("/api/items/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    const { id } = req.params;
+
+    try {
+      const item = await storage.getItem(Number(id));
+      if (!item) {
+        return res.status(404).json({ message: "Item not found" });
+      }
+
+      if (item.userId !== req.user.id) {
+        return res.status(403).json({ message: "You can only delete your own items" });
+      }
+
+      await storage.deleteItem(Number(id));
+      res.sendStatus(204);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to delete item" });
     }
   });
 
