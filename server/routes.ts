@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
-import { storage } from "./storage";
+import { storage as dbStorage } from "./storage";
 import { insertItemSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
@@ -14,7 +14,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
+const multerStorage = multer.diskStorage({
   destination: uploadDir,
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage: multerStorage });
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       type: type as string | undefined,
       category: category as string | undefined
     };
-    const items = await storage.getItems(filters);
+    const items = await dbStorage.getItems(filters);
     res.json(items);
   });
 
@@ -57,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json(parseResult.error);
     }
 
-    const item = await storage.createItem({
+    const item = await dbStorage.createItem({
       ...parseResult.data,
       userId: req.user.id,
     });
@@ -75,7 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const item = await storage.updateItemStatus(Number(id), status);
+      const item = await dbStorage.updateItemStatus(Number(id), status);
       res.json(item);
     } catch (err) {
       res.status(404).json({ message: "Item not found" });
@@ -88,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { id } = req.params;
 
     try {
-      const item = await storage.getItem(Number(id));
+      const item = await dbStorage.getItem(Number(id));
       if (!item) {
         return res.status(404).json({ message: "Item not found" });
       }
@@ -97,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You can only delete your own items" });
       }
 
-      await storage.deleteItem(Number(id));
+      await dbStorage.deleteItem(Number(id));
       res.sendStatus(204);
     } catch (err) {
       res.status(500).json({ message: "Failed to delete item" });
