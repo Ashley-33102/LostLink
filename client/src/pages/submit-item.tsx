@@ -13,13 +13,14 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, UploadCloud } from "lucide-react";
 
 export default function SubmitItem() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(insertItemSchema),
@@ -34,9 +35,28 @@ export default function SubmitItem() {
     },
   });
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleImageChange = (file: File) => {
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Image size should be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setSelectedImage(file);
       // Show preview
       const reader = new FileReader();
@@ -44,6 +64,34 @@ export default function SubmitItem() {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleImageChange(files[0]);
     }
   };
 
@@ -217,14 +265,24 @@ export default function SubmitItem() {
                 )}
               />
 
-              {/* Image Upload Section */}
+              {/* Image Upload Section with Drag & Drop */}
               <div className="space-y-2">
                 <FormLabel>Item Image</FormLabel>
-                <div className="border-2 border-dashed rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
+                    isDragging
+                      ? 'border-primary bg-primary/5'
+                      : 'border-gray-200 hover:border-primary/50 hover:bg-gray-50'
+                  }`}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
                   <Input
                     type="file"
                     accept="image/*"
-                    onChange={handleImageChange}
+                    onChange={(e) => e.target.files && handleImageChange(e.target.files[0])}
                     className="hidden"
                     id="imageUpload"
                   />
@@ -233,17 +291,27 @@ export default function SubmitItem() {
                     className="flex flex-col items-center justify-center cursor-pointer"
                   >
                     {imagePreview ? (
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full max-w-xs h-48 object-cover rounded-lg mb-2"
-                      />
+                      <div className="space-y-4 w-full">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="w-full max-w-sm mx-auto h-48 object-cover rounded-lg"
+                        />
+                        <p className="text-sm text-center text-gray-500">
+                          Click or drag to replace the image
+                        </p>
+                      </div>
                     ) : (
-                      <div className="flex flex-col items-center">
-                        <ImageIcon className="h-12 w-12 text-gray-400 mb-2" />
-                        <span className="text-sm text-gray-500">
-                          Click to upload an image
-                        </span>
+                      <div className="flex flex-col items-center space-y-4">
+                        <UploadCloud className="h-12 w-12 text-gray-400" />
+                        <div className="text-center">
+                          <p className="text-gray-600 font-medium">
+                            Drag and drop your image here, or click to select
+                          </p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Supports: JPG, PNG, WEBP (max 5MB)
+                          </p>
+                        </div>
                       </div>
                     )}
                   </label>
