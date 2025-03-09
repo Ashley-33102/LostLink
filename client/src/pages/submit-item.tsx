@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
-import { Image as ImageIcon, UploadCloud } from "lucide-react";
+import { UploadCloud } from "lucide-react";
 
 export default function SubmitItem() {
   const { toast } = useToast();
