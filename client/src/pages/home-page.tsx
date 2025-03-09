@@ -55,7 +55,7 @@ export default function HomePage() {
   const foundItems = items?.filter(item => item.type === 'found' && item.status === 'open') || [];
 
   const ItemCard = ({ item }: { item: Item }) => (
-    <Card className="backdrop-blur-sm bg-card/95">
+    <Card className="backdrop-blur-sm bg-card/95 hover:shadow-lg transition-shadow duration-200">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>{item.title}</span>
@@ -88,6 +88,7 @@ export default function HomePage() {
               size="sm"
               onClick={() => markAsCompleteMutation.mutate(item.id)}
               disabled={markAsCompleteMutation.isPending}
+              className="hover:bg-primary/10"
             >
               <Check className="h-4 w-4 mr-1" />
               Mark as Complete
@@ -97,6 +98,7 @@ export default function HomePage() {
               size="sm"
               onClick={() => deleteMutation.mutate(item.id)}
               disabled={deleteMutation.isPending}
+              className="hover:bg-destructive/10"
             >
               <Trash2 className="h-4 w-4 mr-1" />
               Delete
@@ -108,18 +110,24 @@ export default function HomePage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-background/95">
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Lost & Found, made simple
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100/50">
+      <header className="border-b bg-gradient-to-r from-gray-900 to-gray-800 text-white shadow-md">
+        <div className="container mx-auto px-4 py-6 flex items-center justify-between">
+          <h1 className="text-3xl font-bold">
+            <span className="bg-gradient-to-r from-gray-100 to-white bg-clip-text text-transparent font-serif tracking-wide">
+              Lost & Found, <span className="font-semibold">Made Simple</span>
+            </span>
           </h1>
           <div className="flex items-center gap-4">
-            <span className="text-muted-foreground">Welcome, {user?.username}</span>
+            <span className="text-gray-300">Welcome, {user?.username}</span>
             <Link href="/submit">
-              <Button>Submit Item</Button>
+              <Button className="bg-white/10 hover:bg-white/20 text-white border-white/20">Submit Item</Button>
             </Link>
-            <Button variant="outline" onClick={() => logoutMutation.mutate()}>
+            <Button 
+              variant="outline" 
+              onClick={() => logoutMutation.mutate()}
+              className="text-white border-white/20 hover:bg-white/10"
+            >
               Logout
             </Button>
           </div>
@@ -132,17 +140,22 @@ export default function HomePage() {
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-12">
             <section>
-              <h2 className="text-2xl font-semibold mb-4">Lost Items</h2>
+              <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">
+                Lost Items
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  ({lostItems.length} active)
+                </span>
+              </h2>
               {lostItems.length === 0 ? (
-                <Card>
-                  <CardContent className="py-8 text-center text-muted-foreground">
+                <Card className="bg-gray-50/50">
+                  <CardContent className="py-8 text-center text-gray-500">
                     No lost items reported
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {lostItems.map((item) => (
                     <ItemCard key={item.id} item={item} />
                   ))}
@@ -151,15 +164,20 @@ export default function HomePage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold mb-4">Found Items</h2>
+              <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">
+                Found Items
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  ({foundItems.length} active)
+                </span>
+              </h2>
               {foundItems.length === 0 ? (
-                <Card>
-                  <CardContent className="py-8 text-center text-muted-foreground">
+                <Card className="bg-gray-50/50">
+                  <CardContent className="py-8 text-center text-gray-500">
                     No found items reported
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {foundItems.map((item) => (
                     <ItemCard key={item.id} item={item} />
                   ))}
@@ -170,8 +188,8 @@ export default function HomePage() {
         )}
       </main>
 
-      <footer className="border-t bg-muted/50">
-        <div className="container mx-auto px-4 py-6 text-center text-muted-foreground">
+      <footer className="border-t bg-gradient-to-b from-gray-100 to-gray-50">
+        <div className="container mx-auto px-4 py-6 text-center text-gray-600">
           Here we connect people with their lost treasure
         </div>
       </footer>
