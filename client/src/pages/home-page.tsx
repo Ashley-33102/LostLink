@@ -126,7 +126,7 @@ export default function HomePage() {
             <Button 
               variant="outline" 
               onClick={() => logoutMutation.mutate()}
-              className="text-white border-white/20 hover:bg-white/10"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20"
             >
               Logout
             </Button>
@@ -188,8 +188,8 @@ export default function HomePage() {
         )}
       </main>
 
-      <footer className="border-t bg-gradient-to-b from-gray-100 to-gray-50">
-        <div className="container mx-auto px-4 py-6 text-center text-gray-600">
+      <footer className="border-t bg-gradient-to-r from-gray-900 to-gray-800 text-white shadow-md">
+        <div className="container mx-auto px-4 py-6 text-center text-gray-300">
           Here we connect people with their lost treasure
         </div>
       </footer>
