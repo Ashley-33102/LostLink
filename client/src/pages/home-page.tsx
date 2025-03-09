@@ -8,6 +8,7 @@ import { Loader2, Check, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { enhancedColors } from "@/lib/color-utils";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
@@ -59,36 +60,40 @@ export default function HomePage() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>{item.title}</span>
-          <span className={`text-sm px-2 py-1 rounded ${item.type === 'lost' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
+          <span className={`text-sm px-3 py-1.5 rounded-full font-medium ${
+            item.type === 'lost' 
+              ? 'bg-destructive/15 text-destructive-foreground'
+              : 'bg-success/15 text-success-foreground'
+          }`}>
             {item.type.toUpperCase()}
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-muted-foreground mb-2">{item.description}</p>
-        <div className="space-y-2 text-sm">
+        <p className="text-muted-foreground mb-4">{item.description}</p>
+        <div className="space-y-3 text-sm">
           <div className="flex items-center gap-2">
-            <span className="font-medium">Location:</span>
-            <span>{item.location}</span>
+            <span className="font-medium text-gray-700">Location:</span>
+            <span className="text-gray-600">{item.location}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-medium">Category:</span>
-            <span>{item.category}</span>
+            <span className="font-medium text-gray-700">Category:</span>
+            <span className="text-gray-600">{item.category}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-medium">Contact:</span>
-            <span>{item.contactNumber}</span>
+            <span className="font-medium text-gray-700">Contact:</span>
+            <span className="text-gray-600">{item.contactNumber}</span>
           </div>
         </div>
 
         {item.userId === user?.id && (
-          <div className="flex items-center gap-2 mt-4">
+          <div className="flex items-center gap-2 mt-6">
             <Button
               variant="outline"
               size="sm"
               onClick={() => markAsCompleteMutation.mutate(item.id)}
               disabled={markAsCompleteMutation.isPending}
-              className="hover:bg-primary/10"
+              className="bg-success/10 hover:bg-success/20 text-success-foreground border-success/20"
             >
               <Check className="h-4 w-4 mr-1" />
               Mark as Complete
@@ -98,7 +103,7 @@ export default function HomePage() {
               size="sm"
               onClick={() => deleteMutation.mutate(item.id)}
               disabled={deleteMutation.isPending}
-              className="hover:bg-destructive/10"
+              className="bg-destructive/10 hover:bg-destructive/20 text-destructive-foreground border-destructive/20"
             >
               <Trash2 className="h-4 w-4 mr-1" />
               Delete
@@ -119,14 +124,16 @@ export default function HomePage() {
             </span>
           </h1>
           <div className="flex items-center gap-4">
-            <span className="text-gray-300">Welcome, {user?.username}</span>
+            <span className="text-gray-200">Welcome, {user?.username}</span>
             <Link href="/submit">
-              <Button className="bg-white/10 hover:bg-white/20 text-white border-white/20">Submit Item</Button>
+              <Button className="bg-white/15 hover:bg-white/25 text-white border-white/25 font-medium">
+                Submit Item
+              </Button>
             </Link>
             <Button 
               variant="outline" 
               onClick={() => logoutMutation.mutate()}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+              className="bg-white/15 hover:bg-white/25 text-white border-white/25 font-medium"
             >
               Logout
             </Button>
@@ -137,20 +144,20 @@ export default function HomePage() {
       <main className="container mx-auto px-4 py-8">
         {isLoading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
           </div>
         ) : (
           <div className="space-y-12">
             <section>
               <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">
                 Lost Items
-                <span className="ml-2 text-sm font-normal text-gray-500">
+                <span className="ml-2 text-sm font-normal text-gray-600">
                   ({lostItems.length} active)
                 </span>
               </h2>
               {lostItems.length === 0 ? (
                 <Card className="bg-gray-50/50">
-                  <CardContent className="py-8 text-center text-gray-500">
+                  <CardContent className="py-8 text-center text-gray-600">
                     No lost items reported
                   </CardContent>
                 </Card>
@@ -166,13 +173,13 @@ export default function HomePage() {
             <section>
               <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">
                 Found Items
-                <span className="ml-2 text-sm font-normal text-gray-500">
+                <span className="ml-2 text-sm font-normal text-gray-600">
                   ({foundItems.length} active)
                 </span>
               </h2>
               {foundItems.length === 0 ? (
                 <Card className="bg-gray-50/50">
-                  <CardContent className="py-8 text-center text-gray-500">
+                  <CardContent className="py-8 text-center text-gray-600">
                     No found items reported
                   </CardContent>
                 </Card>
@@ -189,7 +196,7 @@ export default function HomePage() {
       </main>
 
       <footer className="border-t bg-gradient-to-r from-gray-900 to-gray-800 text-white shadow-md">
-        <div className="container mx-auto px-4 py-6 text-center text-gray-300">
+        <div className="container mx-auto px-4 py-6 text-center text-gray-200">
           Here we connect people with their lost treasure
         </div>
       </footer>
