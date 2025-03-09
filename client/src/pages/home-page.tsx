@@ -72,12 +72,12 @@ export default function HomePage() {
             <img
               src={item.imageUrl}
               alt={item.title}
-              className="w-full h-48 object-cover rounded-lg"
+              className="w-full h-64 object-contain rounded-lg bg-gray-50"
             />
           </div>
         ) : (
-          <div className="mb-4 flex items-center justify-center h-48 bg-gray-100 rounded-lg">
-            <ImageIcon className="h-12 w-12 text-gray-400" />
+          <div className="mb-4 flex items-center justify-center h-64 bg-gray-50 rounded-lg">
+            <ImageIcon className="h-16 w-16 text-gray-400" />
           </div>
         )}
         <p className="text-muted-foreground mb-2">{item.description}</p>

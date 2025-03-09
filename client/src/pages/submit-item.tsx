@@ -282,7 +282,12 @@ export default function SubmitItem() {
                   <Input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => e.target.files && handleImageChange(e.target.files[0])}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleImageChange(file);
+                      }
+                    }}
                     className="hidden"
                     id="imageUpload"
                   />
@@ -295,7 +300,7 @@ export default function SubmitItem() {
                         <img
                           src={imagePreview}
                           alt="Preview"
-                          className="w-full max-w-sm mx-auto h-48 object-cover rounded-lg"
+                          className="w-full h-64 object-contain rounded-lg bg-gray-50"
                         />
                         <p className="text-sm text-center text-gray-500">
                           Click or drag to replace the image
@@ -303,7 +308,7 @@ export default function SubmitItem() {
                       </div>
                     ) : (
                       <div className="flex flex-col items-center space-y-4">
-                        <UploadCloud className="h-12 w-12 text-gray-400" />
+                        <UploadCloud className="h-16 w-16 text-gray-400" />
                         <div className="text-center">
                           <p className="text-gray-600 font-medium">
                             Drag and drop your image here, or click to select
