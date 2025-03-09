@@ -12,16 +12,10 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
-import { Image } from "lucide-react";
-import { Label } from "@/components/ui/label";
-
 
 export default function SubmitItem() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const form = useForm({
     resolver: zodResolver(insertItemSchema),
@@ -32,40 +26,12 @@ export default function SubmitItem() {
       category: "other",
       location: "",
       contactNumber: "",
-      imageUrl: "",
     },
   });
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const submitMutation = useMutation({
     mutationFn: async (data: any) => {
-      let imageUrl = "";
-      if (selectedImage) {
-        const formData = new FormData();
-        formData.append("image", selectedImage);
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        });
-        if (!uploadRes.ok) throw new Error("Failed to upload image");
-        const uploadData = await uploadRes.json();
-        imageUrl = uploadData.url;
-      }
-
-      const itemData = { ...data, imageUrl };
-      const res = await apiRequest("POST", "/api/items", itemData);
+      const res = await apiRequest("POST", "/api/items", data);
       return res.json();
     },
     onSuccess: () => {
@@ -200,38 +166,6 @@ export default function SubmitItem() {
                   </FormItem>
                 )}
               />
-
-              <div className="space-y-2">
-                <Label className="font-medium">Item Image</Label>
-                <div className="border-2 border-dashed rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                    id="imageUpload"
-                  />
-                  <label
-                    htmlFor="imageUpload"
-                    className="flex flex-col items-center justify-center cursor-pointer"
-                  >
-                    {imagePreview ? (
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full max-w-xs h-48 object-cover rounded-lg mb-2"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center">
-                        <Image className="h-12 w-12 text-gray-400 mb-2" />
-                        <span className="text-sm text-gray-500">
-                          Click to upload an image
-                        </span>
-                      </div>
-                    )}
-                  </label>
-                </div>
-              </div>
 
               <Button type="submit" className="w-full" disabled={submitMutation.isPending}>
                 {submitMutation.isPending ? "Submitting..." : "Submit Item"}
