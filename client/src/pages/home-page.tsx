@@ -4,7 +4,7 @@ import { Item } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Loader2, Check, Trash2 } from "lucide-react";
+import { Loader2, Check, Trash2, Image as ImageIcon } from "lucide-react";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -67,6 +67,19 @@ export default function HomePage() {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {item.imageUrl ? (
+          <div className="mb-4">
+            <img
+              src={item.imageUrl}
+              alt={item.title}
+              className="w-full h-48 object-cover rounded-lg"
+            />
+          </div>
+        ) : (
+          <div className="mb-4 flex items-center justify-center h-48 bg-gray-100 rounded-lg">
+            <ImageIcon className="h-12 w-12 text-gray-400" />
+          </div>
+        )}
         <p className="text-muted-foreground mb-2">{item.description}</p>
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2">
@@ -127,8 +140,8 @@ export default function HomePage() {
                 Submit Item
               </Button>
             </Link>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => logoutMutation.mutate()}
               className="bg-white/10 hover:bg-white/20 text-white border-white/20"
             >

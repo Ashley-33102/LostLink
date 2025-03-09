@@ -19,6 +19,7 @@ export const items = pgTable("items", {
   contactNumber: text("contact_number").notNull(),
   status: text("status").notNull(), // 'open' or 'closed'
   date: timestamp("date").notNull(),
+  imageUrl: text("image_url"), // Optional image URL
 });
 
 export const insertUserSchema = createInsertSchema(users)
@@ -44,6 +45,7 @@ export const insertItemSchema = createInsertSchema(items)
     category: true,
     location: true,
     contactNumber: true,
+    imageUrl: true,
   })
   .extend({
     type: z.enum(['lost', 'found']),
@@ -52,6 +54,7 @@ export const insertItemSchema = createInsertSchema(items)
       .min(10, "Contact number must be at least 10 digits")
       .max(15, "Contact number must be less than 15 digits")
       .regex(/^\+?[\d\s-]+$/, "Please enter a valid contact number"),
+    imageUrl: z.string().optional(),
   });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
