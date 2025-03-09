@@ -258,7 +258,7 @@ export default function SubmitItem() {
                   <FormItem>
                     <FormLabel>Contact Number</FormLabel>
                     <FormControl>
-                      <Input {...field} type="tel" placeholder="+1234567890" />
+                      <Input type="tel" placeholder="+1234567890" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
