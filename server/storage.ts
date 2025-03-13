@@ -1,7 +1,7 @@
-import { User, InsertUser, Item, InsertItem } from "@shared/schema";
+import { User, InsertUser, Item, InsertItem, AuthorizedCnic, InsertAuthorizedCnic } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { users, items } from "@shared/schema";
+import { users, items, authorizedCnics } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -11,6 +11,7 @@ const PostgresSessionStore = connectPg(session);
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByCnic(cnic: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
   createItem(item: InsertItem & { userId: number }): Promise<Item>;
@@ -18,6 +19,11 @@ export interface IStorage {
   getItems(filters?: { type?: string; category?: string }): Promise<Item[]>;
   updateItemStatus(id: number, status: string): Promise<Item>;
   deleteItem(id: number): Promise<void>;
+
+  getAuthorizedCnic(cnic: string): Promise<AuthorizedCnic | undefined>;
+  addAuthorizedCnic(cnic: InsertAuthorizedCnic & { addedBy: number }): Promise<AuthorizedCnic>;
+  removeAuthorizedCnic(cnic: string): Promise<void>;
+  listAuthorizedCnics(): Promise<AuthorizedCnic[]>;
 
   sessionStore: session.Store;
 }
@@ -46,6 +52,13 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByCnic(cnic: string): Promise<User | undefined> {
+    console.log('Getting user by CNIC:', cnic);
+    const [user] = await db.select().from(users).where(eq(users.cnic, cnic));
+    console.log('Found user:', user ? 'yes' : 'no');
+    return user;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     console.log('Creating user:', insertUser.username);
     const [user] = await db.insert(users).values(insertUser).returning();
@@ -53,6 +66,33 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getAuthorizedCnic(cnic: string): Promise<AuthorizedCnic | undefined> {
+    const [authorized] = await db
+      .select()
+      .from(authorizedCnics)
+      .where(eq(authorizedCnics.cnic, cnic));
+    return authorized;
+  }
+
+  async addAuthorizedCnic(insertCnic: InsertAuthorizedCnic & { addedBy: number }): Promise<AuthorizedCnic> {
+    const [cnic] = await db
+      .insert(authorizedCnics)
+      .values(insertCnic)
+      .returning();
+    return cnic;
+  }
+
+  async removeAuthorizedCnic(cnic: string): Promise<void> {
+    await db
+      .delete(authorizedCnics)
+      .where(eq(authorizedCnics.cnic, cnic));
+  }
+
+  async listAuthorizedCnics(): Promise<AuthorizedCnic[]> {
+    return db.select().from(authorizedCnics);
+  }
+
+  // Keep existing item-related methods unchanged
   async createItem(insertItem: InsertItem & { userId: number }): Promise<Item> {
     console.log('Creating item:', insertItem);
     const [item] = await db.insert(items).values({
