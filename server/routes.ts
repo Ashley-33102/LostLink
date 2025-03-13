@@ -34,12 +34,8 @@ const multerStorage = multer.diskStorage({
 
 const upload = multer({ storage: multerStorage });
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  setupAuth(app);
-
-  // Serve uploaded files statically
-  app.use("/uploads", express.static(uploadDir));
-
+export async function registerRoutes(app: Express): Server {
+  // These routes should be available before auth setup
   // Check if admin exists
   app.get("/api/admin/exists", async (req, res) => {
     try {
@@ -93,6 +89,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Setup auth after public routes
+  setupAuth(app);
+
+  // Serve uploaded files statically
+  app.use("/uploads", express.static(uploadDir));
+
   // Image upload endpoint
   app.post("/api/upload", upload.single("image"), (req, res) => {
     if (!req.file) {
@@ -123,6 +125,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const item = await dbStorage.createItem({
       ...parseResult.data,
       userId: req.user.id,
+      status: 'open',
+      date: new Date(),
     });
     res.status(201).json(item);
   });
