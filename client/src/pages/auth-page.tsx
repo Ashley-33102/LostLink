@@ -6,7 +6,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { insertUserSchema } from "@shared/schema";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
 import { useState } from "react";
 
 export default function AuthPage() {
@@ -99,6 +99,14 @@ export default function AuthPage() {
                 >
                   {loginMutation.isPending ? "Logging in..." : "Login"}
                 </Button>
+
+                <div className="mt-4 text-center">
+                  <Link href="/admin">
+                    <Button variant="link" type="button">
+                      Admin Registration
+                    </Button>
+                  </Link>
+                </div>
               </form>
             </Form>
           </CardContent>
