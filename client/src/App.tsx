@@ -10,6 +10,7 @@ import NotFound from "./pages/not-found";
 import AuthPage from "./pages/auth-page";
 import HomePage from "./pages/home-page";
 import SubmitItem from "./pages/submit-item";
+import AdminPage from "./pages/admin-page";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/submit" component={SubmitItem} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/admin" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>
   );

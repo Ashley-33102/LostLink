@@ -24,6 +24,7 @@ export interface IStorage {
   addAuthorizedCnic(cnic: InsertAuthorizedCnic & { addedBy: number }): Promise<AuthorizedCnic>;
   removeAuthorizedCnic(cnic: string): Promise<void>;
   listAuthorizedCnics(): Promise<AuthorizedCnic[]>;
+  getAllUsers(): Promise<User[]>;
 
   sessionStore: session.Store;
 }
@@ -92,7 +93,10 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(authorizedCnics);
   }
 
-  // Keep existing item-related methods unchanged
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users);
+  }
+
   async createItem(insertItem: InsertItem & { userId: number }): Promise<Item> {
     console.log('Creating item:', insertItem);
     const [item] = await db.insert(items).values({

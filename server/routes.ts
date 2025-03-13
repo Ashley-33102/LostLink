@@ -2,11 +2,21 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage as dbStorage } from "./storage";
-import { insertItemSchema } from "@shared/schema";
+import { insertItemSchema, insertUserSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import express from "express";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
 
 // Configure multer for image uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -29,6 +39,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Serve uploaded files statically
   app.use("/uploads", express.static(uploadDir));
+
+  // Check if admin exists
+  app.get("/api/admin/exists", async (req, res) => {
+    try {
+      const users = await dbStorage.getAllUsers();
+      const adminExists = users.some(user => user.isAdmin);
+      res.json(adminExists);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to check admin status" });
+    }
+  });
+
+  // Admin registration (only allowed if no admin exists)
+  app.post("/api/admin/register", async (req, res) => {
+    try {
+      // Check if admin already exists
+      const users = await dbStorage.getAllUsers();
+      if (users.some(user => user.isAdmin)) {
+        return res.status(400).json({ message: "Admin already exists" });
+      }
+
+      const parseResult = insertUserSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json(parseResult.error);
+      }
+
+      const { username, password, cnic } = parseResult.data;
+
+      // Check if username or CNIC already exists
+      const existingUser = await dbStorage.getUserByUsername(username);
+      const existingCnic = await dbStorage.getUserByCnic(cnic);
+
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      if (existingCnic) {
+        return res.status(400).json({ message: "CNIC already registered" });
+      }
+
+      const hashedPassword = await hashPassword(password);
+      const user = await dbStorage.createUser({
+        username,
+        password: hashedPassword,
+        cnic,
+        isAdmin: true,
+      });
+
+      res.status(201).json({ ...user, password: undefined });
+    } catch (error) {
+      console.error('Admin registration error:', error);
+      res.status(500).json({ message: "Failed to create admin account" });
+    }
+  });
 
   // Image upload endpoint
   app.post("/api/upload", upload.single("image"), (req, res) => {
