@@ -6,7 +6,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { insertUserSchema } from "@shared/schema";
-import { Redirect, Link } from "wouter";
+import { Redirect } from "wouter";
 import { useState } from "react";
 
 export default function AuthPage() {
@@ -16,8 +16,6 @@ export default function AuthPage() {
   const loginForm = useForm({
     resolver: zodResolver(insertUserSchema),
     defaultValues: { 
-      username: "", 
-      password: "",
       cnic: "",
     },
   });
@@ -55,38 +53,12 @@ export default function AuthPage() {
               <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                 <FormField
                   control={loginForm.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={loginForm.control}
                   name="cnic"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>CNIC</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="13 digit CNIC without dashes" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={loginForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" {...field} />
+                        <Input {...field} placeholder="Enter 13 digit CNIC without dashes" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -97,16 +69,8 @@ export default function AuthPage() {
                   className="w-full" 
                   disabled={loginMutation.isPending}
                 >
-                  {loginMutation.isPending ? "Logging in..." : "Login"}
+                  {loginMutation.isPending ? "Verifying..." : "Login"}
                 </Button>
-
-                <div className="mt-4 text-center">
-                  <Link href="/admin">
-                    <Button variant="link" type="button">
-                      Admin Registration
-                    </Button>
-                  </Link>
-                </div>
               </form>
             </Form>
           </CardContent>
@@ -119,7 +83,7 @@ export default function AuthPage() {
             Find What's Lost, Return What's Found
           </h1>
           <p className="text-muted-foreground">
-            Welcome to our Item Recovery System. Please log in with your authorized credentials to report lost items or help others find their belongings.
+            Welcome to our Item Recovery System. Please enter your authorized CNIC to report lost items or help others find their belongings.
           </p>
         </div>
       </div>

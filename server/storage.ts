@@ -1,4 +1,4 @@
-import { User, InsertUser, Item, InsertItem, AuthorizedCnic, InsertAuthorizedCnic } from "@shared/schema";
+import { User, InsertUser, Item, InsertItem, AuthorizedCnic } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { users, items, authorizedCnics } from "@shared/schema";
@@ -10,21 +10,17 @@ const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
   getUserByCnic(cnic: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
-  createItem(item: InsertItem & { userId: number }): Promise<Item>;
+  createItem(item: InsertItem & { userCnic: string }): Promise<Item>;
   getItem(id: number): Promise<Item | undefined>;
   getItems(filters?: { type?: string; category?: string }): Promise<Item[]>;
   updateItemStatus(id: number, status: string): Promise<Item>;
   deleteItem(id: number): Promise<void>;
 
   getAuthorizedCnic(cnic: string): Promise<AuthorizedCnic | undefined>;
-  addAuthorizedCnic(cnic: InsertAuthorizedCnic & { addedBy: number }): Promise<AuthorizedCnic>;
-  removeAuthorizedCnic(cnic: string): Promise<void>;
   listAuthorizedCnics(): Promise<AuthorizedCnic[]>;
-  getAllUsers(): Promise<User[]>;
 
   sessionStore: session.Store;
 }
@@ -46,13 +42,6 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    console.log('Getting user by username:', username);
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    console.log('Found user:', user ? 'yes' : 'no');
-    return user;
-  }
-
   async getUserByCnic(cnic: string): Promise<User | undefined> {
     console.log('Getting user by CNIC:', cnic);
     const [user] = await db.select().from(users).where(eq(users.cnic, cnic));
@@ -61,7 +50,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    console.log('Creating user:', insertUser.username);
+    console.log('Creating user with CNIC:', insertUser.cnic);
     const [user] = await db.insert(users).values(insertUser).returning();
     console.log('User created with id:', user.id);
     return user;
@@ -75,29 +64,11 @@ export class DatabaseStorage implements IStorage {
     return authorized;
   }
 
-  async addAuthorizedCnic(insertCnic: InsertAuthorizedCnic & { addedBy: number }): Promise<AuthorizedCnic> {
-    const [cnic] = await db
-      .insert(authorizedCnics)
-      .values(insertCnic)
-      .returning();
-    return cnic;
-  }
-
-  async removeAuthorizedCnic(cnic: string): Promise<void> {
-    await db
-      .delete(authorizedCnics)
-      .where(eq(authorizedCnics.cnic, cnic));
-  }
-
   async listAuthorizedCnics(): Promise<AuthorizedCnic[]> {
     return db.select().from(authorizedCnics);
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return db.select().from(users);
-  }
-
-  async createItem(insertItem: InsertItem & { userId: number }): Promise<Item> {
+  async createItem(insertItem: InsertItem & { userCnic: string }): Promise<Item> {
     console.log('Creating item:', insertItem);
     const [item] = await db.insert(items).values({
       ...insertItem,
@@ -123,8 +94,7 @@ export class DatabaseStorage implements IStorage {
       query = query.where(eq(items.category, filters.category));
     }
 
-    const result = await query.orderBy(items.date);
-    return result;
+    return query.orderBy(items.date);
   }
 
   async updateItemStatus(id: number, status: string): Promise<Item> {

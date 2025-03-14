@@ -4,22 +4,18 @@ import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
   cnic: text("cnic").notNull().unique(),
-  isAdmin: boolean("is_admin").notNull().default(false),
 });
 
 export const authorizedCnics = pgTable("authorized_cnics", {
   id: serial("id").primaryKey(),
   cnic: text("cnic").notNull().unique(),
-  addedBy: integer("added_by").notNull(),
   addedAt: timestamp("added_at").notNull().defaultNow(),
 });
 
 export const items = pgTable("items", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userCnic: text("user_cnic").notNull(),
   type: text("type").notNull(), // 'lost' or 'found'
   title: text("title").notNull(),
   description: text("description").notNull(),
@@ -32,19 +28,7 @@ export const items = pgTable("items", {
 });
 
 export const insertUserSchema = createInsertSchema(users)
-  .pick({
-    username: true,
-    password: true,
-    cnic: true,
-  })
   .extend({
-    username: z.string()
-      .min(3, "Username must be at least 3 characters")
-      .max(50, "Username must be less than 50 characters")
-      .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores and dashes"),
-    password: z.string()
-      .min(6, "Password must be at least 6 characters")
-      .max(100, "Password must be less than 100 characters"),
     cnic: z.string()
       .regex(/^\d{13}$/, "CNIC must be exactly 13 digits"),
   });
