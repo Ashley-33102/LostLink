@@ -146,7 +146,6 @@ export default function HomePage() {
             </span>
           </h1>
           <div className="flex items-center gap-4">
-            <span className="text-gray-300">Welcome, {user?.username}</span>
             <Link href="/submit">
               <Button className="bg-white/10 hover:bg-white/20 text-white border-white/20">
                 Submit Item

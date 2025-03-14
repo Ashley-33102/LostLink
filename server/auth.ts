@@ -39,7 +39,9 @@ export function setupAuth(app: Express) {
           const authorized = await storage.getAuthorizedCnic(cnic);
           if (!authorized) {
             console.log('CNIC not authorized');
-            return done(null, false, { message: "Your CNIC is not authorized" });
+            return done(null, false, { 
+              message: "Access Denied: Your CNIC is not authorized to use this system. If you believe this is an error or need access, please contact the system administrator to have your CNIC added to the authorized list." 
+            });
           }
 
           // Get or create user
