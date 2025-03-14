@@ -2,21 +2,11 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage as dbStorage } from "./storage";
-import { insertItemSchema, insertUserSchema } from "@shared/schema";
+import { insertItemSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import express from "express";
-import { scrypt, randomBytes } from "crypto";
-import { promisify } from "util";
-
-const scryptAsync = promisify(scrypt);
-
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
 
 // Configure multer for image uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -34,7 +24,7 @@ const multerStorage = multer.diskStorage({
 
 const upload = multer({ storage: multerStorage });
 
-export async function registerRoutes(app: Express): Server {
+export async function registerRoutes(app: Express): Promise<Server> {
   // These routes should be available before auth setup
   // Check if admin exists
   app.get("/api/admin/exists", async (req, res) => {
@@ -119,16 +109,21 @@ export async function registerRoutes(app: Express): Server {
 
     const parseResult = insertItemSchema.safeParse(req.body);
     if (!parseResult.success) {
-      return res.status(400).json(parseResult.error);
+      return res.status(400).json({ message: "Invalid item data", errors: parseResult.error });
     }
 
-    const item = await dbStorage.createItem({
-      ...parseResult.data,
-      userId: req.user.id,
-      status: 'open',
-      date: new Date(),
-    });
-    res.status(201).json(item);
+    try {
+      const item = await dbStorage.createItem({
+        ...parseResult.data,
+        userCnic: req.user.cnic,
+        status: 'open',
+        date: new Date(),
+      });
+      res.status(201).json(item);
+    } catch (error) {
+      console.error('Failed to create item:', error);
+      res.status(500).json({ message: "Failed to create item" });
+    }
   });
 
   app.patch("/api/items/:id/status", async (req, res) => {
@@ -142,10 +137,19 @@ export async function registerRoutes(app: Express): Server {
     }
 
     try {
-      const item = await dbStorage.updateItemStatus(Number(id), status);
-      res.json(item);
+      const item = await dbStorage.getItem(Number(id));
+      if (!item) {
+        return res.status(404).json({ message: "Item not found" });
+      }
+
+      if (item.userCnic !== req.user.cnic) {
+        return res.status(403).json({ message: "You can only update your own items" });
+      }
+
+      const updatedItem = await dbStorage.updateItemStatus(Number(id), status);
+      res.json(updatedItem);
     } catch (err) {
-      res.status(404).json({ message: "Item not found" });
+      res.status(500).json({ message: "Failed to update item status" });
     }
   });
 
@@ -160,7 +164,7 @@ export async function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Item not found" });
       }
 
-      if (item.userId !== req.user.id) {
+      if (item.userCnic !== req.user.cnic) {
         return res.status(403).json({ message: "You can only delete your own items" });
       }
 
@@ -174,3 +178,13 @@ export async function registerRoutes(app: Express): Server {
   const httpServer = createServer(app);
   return httpServer;
 }
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+const scryptAsync = promisify(scrypt);
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";

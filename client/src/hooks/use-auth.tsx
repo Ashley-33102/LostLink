@@ -4,7 +4,7 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
+import { User as SelectUser, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,14 +12,12 @@ type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
+  loginMutation: UseMutationResult<SelectUser, Error, { cnic: string }>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
 };
 
-type LoginData = Pick<InsertUser, "username" | "password">;
-
 export const AuthContext = createContext<AuthContextType | null>(null);
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const {
@@ -32,19 +30,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginData) => {
+    mutationFn: async (credentials: { cnic: string }) => {
       try {
-        console.log('Attempting login with:', { username: credentials.username });
+        console.log('Attempting login with CNIC:', credentials.cnic);
         const res = await apiRequest("POST", "/api/login", credentials);
+
         if (!res.ok) {
-          throw new Error("Invalid username or password");
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Login failed");
         }
+
         const data = await res.json();
         console.log('Login response:', data);
         return data;
-      } catch (error) {
+      } catch (error: any) {
         console.error('Login error:', error);
-        throw new Error("Invalid username or password");
+        throw error instanceof Error ? error : new Error(error?.message || "Login failed");
       }
     },
     onSuccess: (user: SelectUser) => {
@@ -55,37 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Login mutation error:', error);
       toast({
         title: "Login failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const registerMutation = useMutation({
-    mutationFn: async (credentials: InsertUser) => {
-      try {
-        console.log('Attempting registration with:', { username: credentials.username });
-        const res = await apiRequest("POST", "/api/register", credentials);
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || "Registration failed");
-        }
-        const data = await res.json();
-        console.log('Registration response:', data);
-        return data;
-      } catch (error: any) {
-        console.error('Registration error:', error);
-        throw new Error(error.message || "Registration failed");
-      }
-    },
-    onSuccess: (user: SelectUser) => {
-      console.log('Registration successful:', user);
-      queryClient.setQueryData(["/api/user"], user);
-    },
-    onError: (error: Error) => {
-      console.error('Registration mutation error:', error);
-      toast({
-        title: "Registration failed",
         description: error.message,
         variant: "destructive",
       });
@@ -125,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         loginMutation,
         logoutMutation,
-        registerMutation,
       }}
     >
       {children}
