@@ -16,6 +16,7 @@ import { useState } from "react";
 import { UploadCloud } from "lucide-react";
 
 export default function SubmitItem() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -123,10 +124,11 @@ export default function SubmitItem() {
         }
       }
 
-      // Submit item with image URL if uploaded
+      // Submit item with image URL if uploaded and user's CNIC
       const itemData = {
         ...data,
         imageUrl: imageUrl || undefined,
+        userCnic: user?.cnic, // Use CNIC instead of userId
       };
 
       const res = await apiRequest("POST", "/api/items", itemData);

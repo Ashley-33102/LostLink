@@ -108,7 +108,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {item.userId === user?.id && (
+        {item.userCnic === user?.cnic && (
           <div className="flex items-center gap-2 mt-4">
             <Button
               variant="outline"

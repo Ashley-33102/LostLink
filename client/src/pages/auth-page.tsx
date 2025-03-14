@@ -29,6 +29,7 @@ export default function AuthPage() {
       setFormError("");
       await loginMutation.mutateAsync(data);
     } catch (error: any) {
+      // Display the error message from the server
       setFormError(error.message || "Login failed. Please try again.");
       console.error("Login error:", error);
     }
@@ -45,7 +46,7 @@ export default function AuthPage() {
           </CardHeader>
           <CardContent>
             {formError && (
-              <div className="mb-4 p-3 text-sm text-red-500 bg-red-50 rounded-md">
+              <div className="mb-4 p-4 text-sm bg-destructive/10 text-destructive rounded-md">
                 {formError}
               </div>
             )}
