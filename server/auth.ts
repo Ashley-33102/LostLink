@@ -26,8 +26,12 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy(
-      { usernameField: 'cnic' }, // Use CNIC as the username field
-      async (cnic, password, done) => {
+      { 
+        usernameField: 'cnic',
+        passwordField: 'cnic', 
+        passReqToCallback: false
+      },
+      async (cnic, _, done) => { 
         try {
           console.log('Login attempt with CNIC:', cnic);
 
