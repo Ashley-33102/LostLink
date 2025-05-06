@@ -1,3 +1,5 @@
+import { insertUserSchema } from "@shared/schema";
+import { User } from "@shared/schema";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
@@ -30,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/exists", async (req, res) => {
     try {
       const users = await dbStorage.getAllUsers();
-      const adminExists = users.some(user => user.isAdmin);
+      const adminExists = false;
       res.json(adminExists);
     } catch (error) {
       res.status(500).json({ message: "Failed to check admin status" });
@@ -41,37 +43,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/register", async (req, res) => {
     try {
       // Check if admin already exists
-      const users = await dbStorage.getAllUsers();
-      if (users.some(user => user.isAdmin)) {
-        return res.status(400).json({ message: "Admin already exists" });
-      }
+      // const users = await dbStorage.getAllUsers();
+      // if (users.some(user => user.isAdmin)) {
+      //   return res.status(400).json({ message: "Admin already exists" });
+      // }
 
       const parseResult = insertUserSchema.safeParse(req.body);
       if (!parseResult.success) {
         return res.status(400).json(parseResult.error);
       }
 
-      const { username, password, cnic } = parseResult.data;
+      const { cnic } = parseResult.data;
 
       // Check if username or CNIC already exists
-      const existingUser = await dbStorage.getUserByUsername(username);
+      // const existingUser = await dbStorage.getUserByUsername(username);
       const existingCnic = await dbStorage.getUserByCnic(cnic);
 
-      if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
-      }
+      // if (existingUser) {
+      //   return res.status(400).json({ message: "Username already exists" });
+      // }
       if (existingCnic) {
         return res.status(400).json({ message: "CNIC already registered" });
       }
 
-      const hashedPassword = await hashPassword(password);
-      const user = await dbStorage.createUser({
-        username,
-        password: hashedPassword,
-        cnic,
-        isAdmin: true,
-      });
-
+      const user = await dbStorage.createUser({cnic});
       res.status(201).json({ ...user, password: undefined });
     } catch (error) {
       console.error('Admin registration error:', error);
@@ -116,8 +111,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const item = await dbStorage.createItem({
         ...parseResult.data,
         userCnic: req.user.cnic,
-        status: 'open',
-        date: new Date(),
       });
       res.status(201).json(item);
     } catch (error) {

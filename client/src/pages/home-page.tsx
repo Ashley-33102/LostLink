@@ -142,7 +142,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-6 flex items-center justify-between">
           <h1 className="text-3xl font-bold">
             <span className="bg-gradient-to-r from-gray-100 to-white bg-clip-text text-transparent font-serif tracking-wide">
-              Lost & Found, <span className="font-semibold">Made Simple</span>
+              Lost & Found <span className="font-semibold">Made Simple!</span>
             </span>
           </h1>
           <div className="flex items-center gap-4">

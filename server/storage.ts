@@ -1,6 +1,6 @@
 import { User, InsertUser, Item, InsertItem, AuthorizedCnic } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { users, items, authorizedCnics } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -11,6 +11,8 @@ const PostgresSessionStore = connectPg(session);
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByCnic(cnic: string): Promise<User | undefined>;
+  // getUserByUsername(username: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
 
   createItem(item: InsertItem & { userCnic: string }): Promise<Item>;
@@ -49,11 +51,23 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    console.log('Creating user with CNIC:', insertUser.cnic);
-    const [user] = await db.insert(users).values(insertUser).returning();
-    console.log('User created with id:', user.id);
-    return user;
+  // async getUserByUsername(username: string): Promise<User | undefined> {
+  //   console.log("Getting user by username:", username);
+  //   // const [user] = await db.select().from(users).where(eq(users.username, username));
+  //   return user;
+  // }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users);
+  }
+
+  async createUser({ cnic }: { cnic: string }): Promise<User> {
+    const [newUser] = await db
+      .insert(users)
+      .values({ cnic })
+      .returning();
+  
+    return newUser;
   }
 
   async getAuthorizedCnic(cnic: string): Promise<AuthorizedCnic | undefined> {
@@ -85,16 +99,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getItems(filters?: { type?: string; category?: string }): Promise<Item[]> {
-    let query = db.select().from(items);
-
-    if (filters?.type) {
-      query = query.where(eq(items.type, filters.type));
+    let results: Item[];
+  
+    if (filters?.type && filters?.category) {
+      results = await db
+        .select()
+        .from(items)
+        .where(
+          and(
+            eq(items.type, filters.type),
+            eq(items.category, filters.category)
+          )
+        )
+        .orderBy(items.date);
+    } else if (filters?.type) {
+      results = await db
+        .select()
+        .from(items)
+        .where(eq(items.type, filters.type))
+        .orderBy(items.date);
+    } else if (filters?.category) {
+      results = await db
+        .select()
+        .from(items)
+        .where(eq(items.category, filters.category))
+        .orderBy(items.date);
+    } else {
+      results = await db
+        .select()
+        .from(items)
+        .orderBy(items.date);
     }
-    if (filters?.category) {
-      query = query.where(eq(items.category, filters.category));
-    }
-
-    return query.orderBy(items.date);
+  
+    return results;
   }
 
   async updateItemStatus(id: number, status: string): Promise<Item> {
