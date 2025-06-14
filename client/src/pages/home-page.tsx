@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { Loader2, Check, Trash2, Image as ImageIcon, Search } from "lucide-react";
+import { Loader2, Check, Trash2, Pencil, Image as ImageIcon, Search } from "lucide-react";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,9 @@ export default function HomePage() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+
 
   const { data: items, isLoading } = useQuery<Item[]>({
     queryKey: ["/api/items"],
@@ -63,20 +66,35 @@ export default function HomePage() {
     );
   };
 
+  // Separate lost and found items
   const lostItems = filterItems(items, 'lost');
   const foundItems = filterItems(items, 'found');
-
-  const ItemCard = ({ item }: { item: Item }) => (
+  
+  type ItemCardProps = {
+  item: Item;
+  onEdit?: () => void;
+  };
+  const ItemCard = ({ item, onEdit }: ItemCardProps) => (
     <Card className="backdrop-blur-sm bg-card/95 hover:shadow-lg transition-shadow duration-200">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>{item.title}</span>
-          <span className={`text-sm px-2 py-1 rounded ${
-            item.type === 'lost' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'
-          }`}>
-            {item.type.toUpperCase()}
-          </span>
-        </CardTitle>
+  <span>{item.title}</span>
+  <div className="flex items-center gap-2">
+    {/* <Button
+      variant="ghost"
+      size="icon"
+      onClick={onEdit}
+      className="text-muted-foreground hover:text-foreground"
+    >
+      <Pencil className="w-4 h-4" />
+    </Button> */}
+    <span className={`text-sm px-2 py-1 rounded ${
+      item.type === 'lost' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'
+    }`}>
+      {item.type.toUpperCase()}
+    </span>
+  </div>
+  </CardTitle>
       </CardHeader>
       <CardContent>
         {item.imageUrl ? (
@@ -120,6 +138,29 @@ export default function HomePage() {
               <Check className="h-4 w-4 mr-1" />
               Mark as Complete
             </Button>
+            <Link href={`/edit/${item.id}`}>
+  <Button
+    variant="outline"
+    size="sm"
+    className="hover:bg-primary/10"
+  >
+    <Pencil className="h-4 w-4 mr-1" />
+    Edit
+  </Button>
+</Link>
+{/* <Button
+  variant="outline"
+  size="sm"
+  onClick={() => {
+    setSelectedItem(item);
+    setIsEditModalOpen(true);
+  }}
+  className="hover:bg-primary/10"
+>
+  <Pencil className="h-4 w-4 mr-1" />
+  Edit
+</Button> */}
+
             <Button
               variant="outline"
               size="sm"
@@ -135,7 +176,7 @@ export default function HomePage() {
       </CardContent>
     </Card>
   );
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95">
       <header className="border-b bg-gradient-to-r from-gray-900 to-gray-800 text-white shadow-md">
@@ -194,9 +235,14 @@ export default function HomePage() {
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {lostItems.map((item) => (
-                    <ItemCard key={item.id} item={item} />
+                    <ItemCard key={item.id} item={item} onEdit={() => { 
+                      setSelectedItem(item);
+                      setIsEditModalOpen(true);
+                     }}
+                      />
                   ))}
                 </div>
+                
               )}
             </section>
 
@@ -211,7 +257,11 @@ export default function HomePage() {
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {foundItems.map((item) => (
-                    <ItemCard key={item.id} item={item} />
+                    <ItemCard key={item.id} item={item} onEdit={() => {
+                       setSelectedItem(item);
+                      setIsEditModalOpen(true);
+                     }}
+                      />
                   ))}
                 </div>
               )}

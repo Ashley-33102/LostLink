@@ -27,8 +27,7 @@ const multerStorage = multer.diskStorage({
 const upload = multer({ storage: multerStorage });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // These routes should be available before auth setup
-  // Check if admin exists
+  // Public route: check if admin exists
   app.get("/api/admin/exists", async (req, res) => {
     try {
       const users = await dbStorage.getAllUsers();
@@ -39,34 +38,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin registration (only allowed if no admin exists)
+  // Admin registration
   app.post("/api/admin/register", async (req, res) => {
     try {
-      // Check if admin already exists
-      // const users = await dbStorage.getAllUsers();
-      // if (users.some(user => user.isAdmin)) {
-      //   return res.status(400).json({ message: "Admin already exists" });
-      // }
-
       const parseResult = insertUserSchema.safeParse(req.body);
       if (!parseResult.success) {
         return res.status(400).json(parseResult.error);
       }
 
       const { cnic } = parseResult.data;
-
-      // Check if username or CNIC already exists
-      // const existingUser = await dbStorage.getUserByUsername(username);
       const existingCnic = await dbStorage.getUserByCnic(cnic);
 
-      // if (existingUser) {
-      //   return res.status(400).json({ message: "Username already exists" });
-      // }
       if (existingCnic) {
         return res.status(400).json({ message: "CNIC already registered" });
       }
 
-      const user = await dbStorage.createUser({cnic});
+      const user = await dbStorage.createUser({ cnic });
       res.status(201).json({ ...user, password: undefined });
     } catch (error) {
       console.error('Admin registration error:', error);
@@ -74,13 +61,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Setup auth after public routes
+  // Auth middleware
   setupAuth(app);
 
-  // Serve uploaded files statically
+  // Serve uploaded images
   app.use("/uploads", express.static(uploadDir));
 
-  // Image upload endpoint
+  // Upload image route
   app.post("/api/upload", upload.single("image"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No image provided" });
@@ -89,6 +76,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ url: imageUrl });
   });
 
+  // Get all items (optionally filtered)
   app.get("/api/items", async (req, res) => {
     const { type, category } = req.query;
     const filters = {
@@ -99,6 +87,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(items);
   });
 
+  // ✅ Get single item by ID (required for Edit)
+  app.get("/api/items/:id", async (req, res) => {
+    const id = Number(req.params.id);
+
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid ID" });
+    }
+
+    try {
+      const item = await dbStorage.getItem(id);
+      if (!item) {
+        return res.status(404).json({ error: "Item not found" });
+      }
+      res.json(item);
+    } catch (err) {
+      console.error("Error fetching item:", err);
+      res.status(500).json({ message: "Failed to fetch item" });
+    }
+  });
+
+  // Create new item
   app.post("/api/items", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
@@ -119,6 +128,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update an item (Edit functionality)
+  // app.put("/api/items/:id", async (req, res) => {
+  //   if (!req.isAuthenticated()) return res.sendStatus(401);
+
+  //   const itemId = parseInt(req.params.id);
+  //   const updates = req.body;
+
+  //   try {
+  //     const existingItem = await dbStorage.getItem(itemId);
+  //     if (!existingItem) {
+  //       return res.status(404).json({ message: "Item not found" });
+  //     }
+
+  //     if (existingItem.userCnic !== req.user.cnic) {
+  //       return res.status(403).json({ message: "You can only edit your own items" });
+  //     }
+
+  //     const updatedItem = await dbStorage.updateItem(itemId, updates);
+  //     res.json(updatedItem);
+  //   } catch (err) {
+  //     console.error("Failed to update item:", err);
+  //     res.status(500).json({ message: "Failed to update item" });
+  //   }
+  // });
+
+  app.put("/api/items/:id", upload.single("picture"), async (req, res) => {
+  if (!req.isAuthenticated()) return res.sendStatus(401)
+
+  const itemId = parseInt(req.params.id)
+  const {
+    name,
+    description,
+    location,
+    type,
+    title,
+    category,
+    contactNumber,
+  } = req.body
+
+  console.log("Incoming update request:")
+  console.log("ID:", itemId)
+  console.log("Body:", req.body)
+  console.log("File:", req.file)
+
+  try {
+    const existingItem = await dbStorage.getItem(itemId)
+    if (!existingItem) return res.status(404).json({ message: "Item not found" })
+
+    if (existingItem.userCnic !== req.user.cnic) {
+      return res.status(403).json({ message: "Not allowed to update this item" })
+    }
+
+    // const imageUrl = req.file ? `/uploads/${req.file.filename}` : existingItem.imageUrl
+    const imageUrl = req.file
+  ? `/uploads/${req.file.filename}`
+  : existingItem.imageUrl ?? undefined;
+
+    const updatedItem = await dbStorage.updateItem(itemId, {
+      // name,
+      description,
+      location,
+      type,
+      title,
+      category,
+      contactNumber,
+      imageUrl,
+    })
+
+    console.log("Item updated:", updatedItem)
+
+    res.json(updatedItem)
+  } catch (err) {
+    console.error("Update failed:", err)
+    res.status(500).json({ message: "Failed to update item" })
+  }
+})
+
+  // Update item status (mark open/closed)
   app.patch("/api/items/:id/status", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
@@ -146,6 +233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete an item
   app.delete("/api/items/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 

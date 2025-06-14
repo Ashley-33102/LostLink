@@ -17,6 +17,10 @@ export interface IStorage {
 
   createItem(item: InsertItem & { userCnic: string }): Promise<Item>;
   getItem(id: number): Promise<Item | undefined>;
+  updateItem(
+    id: number,
+    updates: Partial<Omit<InsertItem, 'date' | 'status'>> & { imageUrl?: string }
+  ): Promise<Item>;
   getItems(filters?: { type?: string; category?: string }): Promise<Item[]>;
   updateItemStatus(id: number, status: string): Promise<Item>;
   deleteItem(id: number): Promise<void>;
@@ -133,6 +137,35 @@ export class DatabaseStorage implements IStorage {
   
     return results;
   }
+
+  async updateItem(
+  id: number, 
+  updates: Partial<Omit<InsertItem, 'date' | 'status'>> & { picturePath?: string }
+): Promise<Item> {
+  const updateData: Partial<Omit<InsertItem, 'date' | 'status'>> & { imageUrl?: string } = {};
+
+  if (updates.title !== undefined) updateData.title = updates.title;
+  if (updates.description !== undefined) updateData.description = updates.description;
+  if (updates.location !== undefined) updateData.location = updates.location;
+  if (updates.category !== undefined) updateData.category = updates.category;
+  if (updates.contactNumber !== undefined) updateData.contactNumber = updates.contactNumber;
+  if (updates.type !== undefined) updateData.type = updates.type;
+
+  // Prefer picturePath (uploaded image), fallback to existing imageUrl
+  if (updates.picturePath !== undefined) updateData.imageUrl = updates.picturePath;
+  else if (updates.imageUrl !== undefined) updateData.imageUrl = updates.imageUrl;
+
+  console.log("🔄 Update payload received:", updateData); // <- ADD THIS LINE
+
+  const [item] = await db
+    .update(items)
+    .set(updateData)
+    .where(eq(items.id, id))
+    .returning();
+
+  if (!item) throw new Error('Item not found');
+  return item;
+}
 
   async updateItemStatus(id: number, status: string): Promise<Item> {
     const [item] = await db

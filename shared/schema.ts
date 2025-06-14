@@ -62,6 +62,13 @@ export const insertItemSchema = createInsertSchema(items)
     imageUrl: z.string().optional(),
   });
 
+//   export const editItemSchema = insertItemSchema.extend({
+//   id: z.number(),
+//   date: z.date(),
+//   status: z.enum(["open", "closed"]),
+//   userCnic: z.string(),
+// });
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertAuthorizedCnic = z.infer<typeof insertAuthorizedCnicSchema>;
