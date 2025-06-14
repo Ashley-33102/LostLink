@@ -16,8 +16,6 @@
 
 ## 🧰 Tech Stack
 
-| Frontend      | Backend      | Database     | Other |
-|---------------|--------------|--------------|-------|
-| React + Vite  | Express (Vite SSR) | PostgreSQL + Drizzle ORM | React Hook Form, Zod, Lucide, React Query, TailwindCSS, Sonner Toasts |
-
-
+| Frontend            | Backend             | Runtime  | Language     | Database                 | Libraries & Tools                                                              |
+|---------------------|---------------------|----------|--------------|---------------------------|---------------------------------------------------------------------------------|
+| React + Vite        | Express (Vite SSR)  | Node.js  | TypeScript   | PostgreSQL + Drizzle ORM | React Hook Form, Zod, React Query, Tailwind CSS, Lucide, Sonner, Wouter       |
