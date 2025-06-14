@@ -25,6 +25,7 @@ export const items = pgTable("items", {
   status: text("status").notNull(), // 'open' or 'closed'
   date: timestamp("date").notNull(),
   imageUrl: text("image_url"), // Optional image URL
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users)
