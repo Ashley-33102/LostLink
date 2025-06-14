@@ -2,7 +2,7 @@
 
 **LostLink** is a modern full-stack web application that helps users report, track, and recover lost or found items in their community.
 
----
+
 
 ## 🚀 Features
 
