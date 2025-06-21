@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -25,8 +25,14 @@ export const items = pgTable("items", {
   status: text("status").notNull(), // 'open' or 'closed'
   date: timestamp("date").notNull(),
   imageUrl: text("image_url"), // Optional image URL
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const sessionTable = pgTable("session", {
+  sid: text("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire", { mode: "date" }).notNull(),
+})
 
 export const insertUserSchema = createInsertSchema(users)
   .extend({
